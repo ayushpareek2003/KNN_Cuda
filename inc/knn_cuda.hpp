@@ -2,6 +2,8 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 
 
 
@@ -14,14 +16,15 @@ class KNN{
     public:
         KNN(bool is_cudaTrue=true,int distanceType=1,const std::string pathToCSV);
         
-        void fit(const std::vector<std::vector<float>> mainData);
+        void fit();
 
-        int predict(const std::vector<std::vector<float>> newData);
+        int predict(const std::string testData);
         
-        void transferDataToDevice(float **deviceData,const std::vector<std::vector<float>>
-                                                                         hostData);
-        
+        void transferDataToDevice();
 
+        std::vector<std::vector<float>> csvTOvector(const std::string path);
+
+        __global__ void KNN_CUDA(float **deviceData,int rows,int cols,float *distances);
 
 
 
@@ -29,9 +32,10 @@ class KNN{
         bool is_cudaTrue;
         int distanceType;
         std::string pathToCSV;
-        std::vector<std::vector<float>> mainData;
+        std::vector<std::vector<float>> hostData;
         float** deviceData;
-
+        int rows;
+        int cols;
 
     
 };
