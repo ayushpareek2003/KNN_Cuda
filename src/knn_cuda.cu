@@ -4,7 +4,7 @@
 
 __constant__ float* newData[128];
 
-__global__ void knn::KNN::KNN_CUDA(float **deviceData,int rows,int cols,float *distances){
+__global__ void knn::KNN::KNN_CUDA(float **deviceData,int row,int col,float *distances){
 
 
     int r=threadIdx.x;
@@ -12,21 +12,22 @@ __global__ void knn::KNN::KNN_CUDA(float **deviceData,int rows,int cols,float *d
 
     __shared__ float distancesTEMPblock[128];
 
-    if(r+c<rows*cols){
+    if(r+c<row*col){
         float* a_TEMP=newData[r];
         float* b_TEMP=deviceData[r+c];
         distancesTEMPblock[r/cols]+=(a_TEMP-b_TEMP)*(a_TEMP-b_TEMP);
         __syncthreads();
     }
 
-    distances[r/cols]=distancesTEMPblock[r/cols];
+    distances[r/cols]=sqrt(distancesTEMPblock[r/cols]);
+
     
 
 }
 
-knn::KNN::KNN(bool is_cudaTrue,int distanceType,const std::string pathToCSV):is_cudaTrue(is_cudaTrue),
+knn::KNN::KNN(bool is_cudaTrue,int distanceType,const std::string pathToCSV,int k_NEIG):is_cudaTrue(is_cudaTrue),
                                                             distanceType(distanceType),
-                                                            pathToCSV(pathToCSV){
+                                                            pathToCSV(pathToCSV),k_NEIG(k_NEIG){
 
     hostData=csvTOvector(pathToCSV);
 
@@ -69,15 +70,11 @@ int knn::KNN::predict(const std::string testData){
     //code to answer that soon i will write that// 
 
 
+    int prediction=majorityCOUNT(distances);
 
-
-
-
-
-
-
-
-
+    return prediction;
+    
+    
 }
 
 void knn::KNN::fit(){
@@ -88,8 +85,6 @@ void knn::KNN::fit(){
     }
     else{
         std::cout<<"USE CUDA BHAI"<<std::endl;
-
-        
     }
 
 
@@ -123,11 +118,50 @@ void knn::KNN::transferDataToDevice(){
 
 }
 
+
+int knn::KNN::majorityCOUNT(float* distances){
+    std::map<float,int> combinedDISLAB;
+
+    for(int i=0;i<labels.size();i++){
+        combinedDISLAB[distances[i]]=labels[i];
+    }
+
+    auto itr=combinedDISLAB.begin();
+
+    int ret=itr->second; //default case when no ones get majority , too sbsey kum distance walla return krunga
+    float dist=itr->first;
+    int count=1;
+    std::map<int,int> occurCOUNT;
+    occurCOUNT[ret]=1;
+    int lab=0;
+    itr++;
+
+    while(itr!=combinedDISLAB.end() && lab<k_NEIG){
+        if(occurCOUNT.find(itr->second)==occurCOUNT.end()){
+            occurCOUNT[itr->second]=1;
+        }
+        else{
+            occurCOUNT[itr->second]+=1;
+        }
+
+        if(count<occurCOUNT[itr->second]){
+            count=occurCOUNT[itr->second];
+            ret=itr->second;
+            
+        }
+        itr++;
+        lab++;
+
+    }
+    return ret;
+
+}
+
 std::vector<std::vector<float>> knn::KNN::csvTOvector(const std::string path){
-            std::ifstream file(pathToCSV);
+            std::ifstream file(path);
             std::string line;
 
-            std::vector<std::vector<float>> ret;
+            std::vector<std::vector<float>> ret; //keeping my legacy of naming returning variable as ret (LEETCODE se sikhey h 22)
             if(file.is_open()){
                 while(getline(file,line)){
                     std::stringstream ss(line);
@@ -135,8 +169,10 @@ std::vector<std::vector<float>> knn::KNN::csvTOvector(const std::string path){
                     std::vector<float> row;
                     while(getline(ss,value,',')){
                         row.push_back(std::stof(value));
+
                     }
-                    ret.push_back(row);
+                    ret.push_back(std::vector<float>(row.begin(),row.end()-1));
+                    labels.push_back(row[row.size()-1]);
                 }
                 file.close();
             }  
