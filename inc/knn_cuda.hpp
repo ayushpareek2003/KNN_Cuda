@@ -4,17 +4,14 @@
 #include <sstream>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-
-
-
-
-
-
+#include <math.h>
+#include <algorithm>
+#include <map>
 
 namespace knn{
 class KNN{
     public:
-        KNN(bool is_cudaTrue=true,int distanceType=1,const std::string pathToCSV);
+        KNN(bool is_cudaTrue=true,int distanceType=1,const std::string pathToCSV,int k_NEIG);
         
         void fit();
 
@@ -24,7 +21,9 @@ class KNN{
 
         std::vector<std::vector<float>> csvTOvector(const std::string path);
 
-        __global__ void KNN_CUDA(float **deviceData,int rows,int cols,float *distances);
+        __global__ void KNN_CUDA(float **deviceData,int row,int col,float *distances);
+
+        int majorityCOUNT(float* distances);
 
 
 
@@ -33,13 +32,13 @@ class KNN{
         int distanceType;
         std::string pathToCSV;
         std::vector<std::vector<float>> hostData;
+        std::vector<int> labels;
         float** deviceData;
         int rows;
         int cols;
+        int k_NEIG;
 
-    
 };
-
 
 }
 
