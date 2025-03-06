@@ -1,4 +1,7 @@
-#include "..\inc\knn_cuda.hpp"
+#include "knn_cuda.cuh"
+
+//######################## Ayush Pareek ##################################### (07-03-2025)
+
 
 //////////////////////////////////////////////////
 ////////// This is more optimised code ///////////
@@ -28,6 +31,8 @@
 
 // }
 
+
+
 //////////////////////////////////////////////////
 ///////////i will make it work one day ///////////
 //////////////////////////////////////////////////
@@ -37,13 +42,16 @@
 /// temporary function 
 __global__ void KNN_CUDA(float *deviceData, float *testData, int rows, int cols, float *distances) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid < rows) {
-        float dist = 0.0;
-        for (int j = 0; j < cols; ++j) {
-            float diff = testData[j] - deviceData[tid * cols + j];
-            dist += diff * diff;
-        }
-        distances[tid] = sqrtf(dist);
+    
+    if (tid < rows*cols) {
+       
+        int row = tid / cols; 
+        int col = tid % cols; 
+        
+        float diff = deviceData[tid] - testData[col]; 
+     
+        atomicAdd(&distances[row], diff * diff); 
+
     }
 }
 
@@ -62,42 +70,53 @@ int knn::KNN::predict(const std::string testData){
     std::vector<std::vector<float>> readyTestData=csvTOvector(testData);
 
     int row=readyTestData.size();
-    int col=0;
-    if(row>0){
-            col=readyTestData[0].size();
+    int col=readyTestData[0].size();
+
+    std::cout<<row<<" "<<col;
+
+    for(int l=0;l<row;l++){
+        if(readyTestData[l].size()!=cols){
+            std::cout<<cols<<readyTestData[0].size();
+            std::cerr<<"No of columns dont match"<<std::endl;
+            return -1;
+        }
     }
-    else if(row>1){
-        return 0;
-            col=0;
-    }
-    float* h_data_temp=new float[row*col];
+
+    float* h_data_temp;
+    h_data_temp=(float*)malloc(sizeof(float)*row*col);
 
     for(int i=0;i<row;i++){
         for(int j=0;j<col;j++){
-            h_data_temp[i*(col)+j]=hostData[i][j];
+            h_data_temp[i*(col)+j]=readyTestData[i][j];
 
         }
     }
 
-    float *newData;
+    float *newData_GPU;
 
     // cudaMemcpyToSymbol(newData,h_data_temp,sizeof(h_data_temp));
-    cudaMalloc(&newData,row*col*sizeof(float));
-    cudaMemcpy(newData,h_data_temp,row*col*sizeof(float),cudaMemcpyHostToDevice);
+    cudaMalloc(&newData_GPU,row*col*sizeof(float));
+    cudaMemcpy(newData_GPU,h_data_temp,row*col*sizeof(float),cudaMemcpyHostToDevice);
 
 
     float *distances;
-    distances=(float*)malloc(sizeof(float)*rows);
+    cudaMalloc(&distances,rows*sizeof(float));
 
     dim3 blocks=(ceil((row*col)/128));
     dim3 threads=(128);
-
-    KNN_CUDA<<<blocks,threads>>>(deviceData,newData,rows,cols,distances);
+ 
+    KNN_CUDA<<<1,128>>>(deviceData,newData_GPU,rows,cols,distances);
+    cudaDeviceSynchronize();
 
     //code to answer that soon i will write that// 
-
-
-    int prediction=majorityCOUNT(distances);
+    float *distances_host;
+    distances_host=(float*)malloc(sizeof(float)*rows);
+    
+    cudaMemcpy(distances_host,distances,sizeof(float)*rows,cudaMemcpyDeviceToHost);
+    
+    cudaFree(distances);
+    
+    int prediction=majorityCOUNT(distances_host);
 
     return prediction;
     
@@ -149,10 +168,11 @@ void knn::KNN::transferDataToDevice(){
 int knn::KNN::majorityCOUNT(float* distances){
     std::map<float,int> combinedDISLAB;
 
-    std::cout<<labels.size()<<std::endl;
+    // std::cout<<labels.size()<<std::endl;
     for(int i=0;i<labels.size();i++){
         combinedDISLAB[distances[i]]=labels[i];
-        std::cout<<distances[i]<<" "<<labels[i]<<std::endl;
+
+        // std::cout<<distances[i]<<" "<<labels[i]<<std::endl;
     }
 
     auto itr=combinedDISLAB.begin();
@@ -162,7 +182,7 @@ int knn::KNN::majorityCOUNT(float* distances){
     int count=1;
     std::map<int,int> occurCOUNT;
     occurCOUNT[ret]=1;
-    int lab=0;
+    int lab=1;
     itr++;
 
     while(itr!=combinedDISLAB.end() && lab<k_NEIG){
@@ -182,6 +202,7 @@ int knn::KNN::majorityCOUNT(float* distances){
         lab++;
 
     }
+
     return ret;
 
 }
@@ -201,7 +222,7 @@ std::vector<std::vector<float>> knn::KNN::csvTOvector(const std::string path){
 
                     }
 
-                    std::cout<<std::endl;
+                    
                     ret.push_back(std::vector<float>(row.begin(),row.end()-1));
                    
                     labels.push_back(row[row.size()-1]);
