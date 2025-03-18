@@ -9,10 +9,13 @@ This repository contains an implementation of the K-Nearest Neighbors (KNN) algo
 ```
 ├── inc/                # Header files
 ├── src/                # Source files (KNN implementation and main logic)
-│   ├── train.cu        # Training data processing
 ├── main.cu             # Main program
+├── Test.cu             # Testing program
 ├── CMakeLists.txt      # CMake configuration file
 ├── test.txt            # Sample test dataset
+├── train.txt           # Sample train dataset
+
+
 ```
 
 ## Features
