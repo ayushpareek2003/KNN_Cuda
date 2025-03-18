@@ -33,8 +33,8 @@ This repository contains an implementation of the K-Nearest Neighbors (KNN) algo
 ### Build Instructions
 1. Clone the repository:
    ```sh
-   git clone <repo-url>
-   cd <repo-folder>
+   git clone https://github.com/ayushpareek2003/KNN_Cuda.git
+   cd KNN_Cuda
    ```
 2. Create a build directory and compile the project:
    ```sh
