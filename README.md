@@ -48,20 +48,18 @@ This repository contains an implementation of the K-Nearest Neighbors (KNN) algo
    ```
 
 ## Usage
-Modify `test.txt` to include the dataset you want to use. The program will read input from `test.txt` and process KNN classification using CUDA.
+Modify `test.txt` to include the dataset you want to use. The program will read input from `test.txt` and process KNN classification using CUDA
 
 ## Performance Comparison
-The shared memory-optimized kernel significantly reduces memory access latency and improves execution speed compared to the standard kernel. This is especially noticeable with larger datasets where memory access patterns become a bottleneck.
+The shared memory-optimized kernel significantly reduces memory access latency and improves execution speed compared to the standard kernel. This is especially noticeable with larger datasets where memory access patterns become a bottleneck
 
 ## Future Improvements
-- Implementing an efficient distance metric calculation.
-- Adding support for k-d tree acceleration.
-- Optimizing memory transfers between host and device.
+- Implementing an efficient distance metric calculation
+- Adding support for k-d tree acceleration
+- Optimizing memory transfers between host and device
 
 ## Contributing
-Feel free to fork the repository and submit pull requests for improvements.
+Feel free to fork the repository and submit pull requests for improvements
 
-## License
-This project is licensed under the MIT License.
 
 
