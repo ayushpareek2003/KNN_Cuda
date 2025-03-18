@@ -19,10 +19,9 @@ This repository contains an implementation of the K-Nearest Neighbors (KNN) algo
 ```
 
 ## Features
-- Implements KNN algorithm in CUDA for parallel processing.
-- Includes two kernels: a basic one and an optimized one using shared memory.
-- Supports large datasets by leveraging GPU acceleration.
-- Modular structure with separate headers and source files.
+- Implements KNN algorithm in CUDA for parallel processing
+- Includes two kernels: a basic one and an optimized one using shared memory
+- Modular structure with separate headers and source files
 
 ## Installation
 ### Prerequisites
